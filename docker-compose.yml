@@ -18,5 +18,18 @@ services:
     depends_on:
       - mongo
 
+  mcp-server:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./users.db:/app/users.db
+      - ./etl/chroma_db:/app/etl/chroma_db:ro
+    environment:
+      - MONGO_URI=${MONGO_URI:-mongodb://mongo:27017/}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+    depends_on:
+      - mongo
+
 volumes:
   mongo_data:

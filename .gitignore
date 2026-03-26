@@ -45,3 +45,15 @@ pyrightconfig.json
 # -------------------------------------------------------
 .DS_Store
 Thumbs.db
+
+# AI, RAG & Data Pipeline
+etl/chroma_db/
+etl/medium_export/
+*.html
+models/
+*.safetensors
+*.bin
+*.onnx
+.cache/
+huggingface/
+.ipynb_checkpoints/

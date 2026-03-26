@@ -16,6 +16,9 @@ from app.infrastructure.entrypoints.mcp.resources.queries import (  # noqa: E402
 from app.infrastructure.entrypoints.mcp.resources.transactions import (  # noqa: E402
     transactions,
 )
+from app.infrastructure.entrypoints.mcp.resources.knowledge import (  # noqa: E402
+    knowledge,
+)
 from fastmcp.server.middleware.error_handling import (  # noqa: E402
     ErrorHandlingMiddleware,
 )
@@ -60,6 +63,7 @@ mcp.add_middleware(ToolCallLoggingMiddleware())
 # ---------------------------------------------------------------------------
 mcp.mount(queries, namespace="queries")
 mcp.mount(transactions, namespace="transactions")
+mcp.mount(knowledge, namespace="knowledge")
 
 if __name__ == "__main__":
     mcp.run(transport="sse", host="127.0.0.1", port=8000)

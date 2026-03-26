@@ -111,6 +111,17 @@ Se encadenaron middlewares para:
 
 ---
 
+## Funcionalidad RAG (Knowledge Base)
+
+El servidor incluye una tool montada en el namespace `knowledge` orientada a consultar una base de conocimiento usando **Generative AI** (Gemini) y una base de datos vectorial local (**ChromaDB**). 
+
+Esta funcionalidad fue construida respetando la Clean Architecture del proyecto:
+- **Dominio**: Se define la interfaz `KnowledgeRepository` como contrato para las consultas, protegiendo al núcleo del uso de librerías externas.
+- **Caso de Uso**: `query_knowledge.py` orquesta la consulta de información sin acoplarse a LangChain o a FastMCP.
+- **Adaptador**: `rag_langchain_adapter.py` provee la implementación concreta del repositorio utilizando **LangChain** para integrarse con ChromaDB y Gemini.
+
+---
+
 ## Requisitos previos
 
 | Requisito | Versión mínima |
