@@ -12,7 +12,7 @@ from motor.motor_asyncio import AsyncIOMotorClient
 MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017/")
 MONGO_DATABASE = os.getenv("MONGO_DATABASE", "mcp_logs")
 
-client = AsyncIOMotorClient(MONGO_URI)
+client: AsyncIOMotorClient = AsyncIOMotorClient(MONGO_URI)
 database = client[MONGO_DATABASE]
 
 # Colecciones utilizadas por los middlewares

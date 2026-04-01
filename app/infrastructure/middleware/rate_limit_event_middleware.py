@@ -39,15 +39,17 @@ class RateLimitEventMiddleware(Middleware):
         try:
             return await call_next(context)
         except Exception as exc:
-            await rate_limit_collection.insert_one({
-                "tool_name": context.message.name,
-                "arguments": dict(
-                    context.message.arguments or {}
-                ),
-                "session_id": (
-                    context.fastmcp_context.session_id
-                ),
-                "timestamp": datetime.now(timezone.utc),
-                "error": str(exc),
-            })
+            await rate_limit_collection.insert_one(
+                {
+                    "tool_name": context.message.name,
+                    "arguments": dict(context.message.arguments or {}),
+                    "session_id": (
+                        context.fastmcp_context.session_id
+                        if context.fastmcp_context
+                        else None
+                    ),
+                    "timestamp": datetime.now(timezone.utc),
+                    "error": str(exc),
+                }
+            )
             raise

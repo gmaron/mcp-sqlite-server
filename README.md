@@ -37,27 +37,27 @@ El **Model Context Protocol (MCP)** es un estándar abierto que conecta sistemas
 
 El proyecto sigue los principios de **Clean Architecture** para mantener las responsabilidades separadas:
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────┐
 │                        main.py                              │
-│               (FastMCP + Middleware chain)                   │
-└──────────┬──────────────────────────┬───────────────────────┘
-           │ monta                    │ monta
-┌──────────▼──────────┐  ┌───────────▼────────────┐
-│  queries (namespace)│  │ transactions (namespace)│
-│   obtener_usuarios  │  │  collect_user_info      │
-│   resource_usuarios │  │  process_transaction    │
-└──────────┬──────────┘  └────────────────────────┘
-           │ usa
-┌──────────▼──────────────────────────────────────┐
-│             application / use_cases              │
-│                  get_users.py                     │
-└──────────┬──────────────────────────────────────┘
-           │ depende de
-┌──────────▼──────────────────────────────────────┐
-│                   domain                         │
-│   entities/usuario.py   interfaces/user_repo.py  │
-└─────────────────────────────────────────────────┘
+│               (FastMCP + Middleware chain)                  │
+└──────────┬──────────────────────────┬───────────────────┬───┘
+           │ monta                    │ monta             │ monta
+┌──────────▼──────────┐  ┌────────────▼───────────┐ ┌─────▼──────────────┐
+│  queries (namespace)│  │transactions (namespace)│ │knowledge           │
+│   obtener_usuarios  │  │  collect_user_info     │ │consultar_base_     │
+│   resource_usuarios │  │  process_transaction   │ │conocimiento_autor  │
+└──────────┬──────────┘  └────────────────────────┘ └─────┬──────────────┘
+           │ usa                                          │ usa
+┌──────────▼──────────────────────────────────────┬───────▼──────────────┐
+│             application / use_cases             │   rag_langchain_adapter
+│  get_users.py         query_knowledge.py        │         .py          │
+└──────────┬────────────────────┬─────────────────┴───────┬──────────────┘
+           │ depende de         │ depende de              │
+┌──────────▼────────────────────▼─────────────────────────▼──────────────┐
+│                   domain (entities & interfaces)                       │
+│   usuario.py          user_repo.py          knowledge_repository.py    │
+└────────────────────────────────────────────────────────────────────────┘
 ```
 
 **Capas:**
@@ -144,8 +144,8 @@ cd mcp-server-sqlite
 python -m venv .venv
 source .venv/bin/activate   # macOS / Linux
 
-# 3. Instalar dependencias
-pip install -r requirements.txt
+# 3. Instalar dependencias (o usar uv sync)
+pip install -e .
 
 # 4. Copiar variables de entorno
 cp .env.example .env
@@ -168,6 +168,10 @@ Toda la configuración se gestiona mediante variables de entorno en el archivo `
 # ─── App ───
 PYTHONPATH=.
 DB_PATH=./users.db
+
+# ─── Conocimiento (RAG) ───
+GEMINI_API_KEY=tu_api_key_aqui
+CHROMA_DB_PATH=./etl/chroma_db
 
 # ─── MongoDB (debe coincidir con docker-compose.yml) ───
 MONGO_URI=mongodb://localhost:27017/
@@ -267,7 +271,8 @@ Agregá la siguiente entrada en tu archivo de configuración MCP del IDE (`mcp_c
         "PYTHONPATH": "/ruta/a/tu/mcp-server-sqlite",
         "DB_PATH": "/ruta/a/tu/mcp-server-sqlite/users.db",
         "MONGO_URI": "mongodb://localhost:27017/",
-        "MONGO_DATABASE": "mcp_logs"
+        "MONGO_DATABASE": "mcp_logs",
+        "GEMINI_API_KEY": "tu_api_key_aqui"
       }
     }
   }
@@ -314,19 +319,24 @@ mcp-server-sqlite/
 │   │   ├── entities/
 │   │   │   └── usuario.py               # Entidad Usuario (Pydantic)
 │   │   └── interfaces/
-│   │       └── user_repository.py        # Interfaz abstracta
+│   │       ├── user_repository.py        # Interfaz abstracta de usuarios
+│   │       └── knowledge_repository.py   # Interfaz abstracta RAG
 │   ├── application/
 │   │   └── use_cases/
-│   │       └── get_users.py              # Caso de uso
+│   │       ├── get_users.py              # Caso de uso usuarios
+│   │       └── query_knowledge.py        # Caso de uso RAG
 │   └── infrastructure/
+│       ├── adapters/
+│       │   └── rag_langchain_adapter.py  # Adaptador de Langchain/Chroma
 │       ├── database/
 │       │   └── sqlite_repository.py      # Repositorio SQLite
 │       ├── entrypoints/
 │       │   └── mcp/resources/
 │       │       ├── queries.py            # Sub-servidor de queries
-│       │       └── transactions.py       # Sub-servidor de transactions
+│       │       ├── transactions.py       # Sub-servidor de transactions
+│       │       └── knowledge.py          # Sub-servidor RAG
 │       └── middleware/
-│           ├── mongo_config.py                  # Config centralizada de MongoDB
+│           ├── mongo_config.py                  # Config centralizada de MongoDB PMI
 │           ├── tool_call_logging_middleware.py   # Logging de cada tool call
 │           └── rate_limit_event_middleware.py    # Logging de rate-limit events
 ├── tests/

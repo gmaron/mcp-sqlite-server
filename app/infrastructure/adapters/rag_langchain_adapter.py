@@ -32,8 +32,10 @@ class RAGLangchainAdapter(KnowledgeRepository):
             self.retriever = vector_store.as_retriever(search_kwargs={"k": 3})
             
             # El motor Generativo
+            import os
+            gemini_model = os.getenv("GEMINI_API_MODEL", "gemini-2.5-flash")
             self.llm = ChatGoogleGenerativeAI(
-                model="gemini-2.5-flash", 
+                model=gemini_model, 
                 temperature=0.2
             )
             
@@ -72,9 +74,8 @@ class RAGLangchainAdapter(KnowledgeRepository):
         ).assign(answer=rag_chain_from_docs)
 
         try:
-            # Aunque la interfaz es async, el invoke corre normal en back-thread protegiendo a Chroma local
-            # del loop asyncio principal nativo de un server framework.
-            response = rag_chain.invoke({"input": query})
+            # Reemplazamos invoke por ainvoke para no bloquear el Event Loop local
+            response = await rag_chain.ainvoke({"input": query})
             
             answer = response.get("answer", "No se pudo generar respuesta.")
             
@@ -83,7 +84,7 @@ class RAGLangchainAdapter(KnowledgeRepository):
             sources = set(doc.metadata.get("titulo", "N/A") for doc in source_docs)
             
             sources_text = "\n\n**Fuentes utilizadas:**\n" + "\n".join(f"- {s}" for s in sources) if sources else ""
-            return answer + sources_text
+            return str(answer) + sources_text
             
         except Exception as e:
             logging.error("Error ejecutando consulta RAG LCEL: %s", e)

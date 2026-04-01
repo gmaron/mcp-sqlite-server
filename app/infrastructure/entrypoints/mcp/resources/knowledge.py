@@ -1,16 +1,18 @@
 import logging
+import os
+from typing import Optional
 from fastmcp import FastMCP
 from app.application.use_cases.query_knowledge import QueryKnowledgeUseCase
 from app.infrastructure.adapters.rag_langchain_adapter import RAGLangchainAdapter
 
 # Construcción de dependencias (DI/Setup)
+query_use_case: Optional[QueryKnowledgeUseCase] = None
 try:
-    rag_adapter = RAGLangchainAdapter(db_path="./etl/chroma_db")
+    db_path = os.getenv("CHROMA_DB_PATH", "./etl/chroma_db")
+    rag_adapter = RAGLangchainAdapter(db_path=db_path)
     query_use_case = QueryKnowledgeUseCase(repository=rag_adapter)
 except Exception as e:
-    logging.error(f"Failed to load RAG Adapter. Is GEMINI_API_KEY set?: {e}")
-    # Default uninitialized if it fails, to avoid breaking entire FastMCP boot
-    query_use_case = None 
+    logging.error("Failed to load RAG Adapter. Is GEMINI_API_KEY set?: %s", e)
 
 # Sub-servidor local de FastMCP
 knowledge = FastMCP("KnowledgeBase")

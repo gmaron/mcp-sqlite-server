@@ -45,21 +45,29 @@ class ToolCallLoggingMiddleware(Middleware):
             raise
         finally:
             msg = context.message
-            elapsed_ms = (
-                datetime.now(timezone.utc) - start
-            ).total_seconds() * 1000
+            elapsed_ms = (datetime.now(timezone.utc) - start).total_seconds() * 1000
 
-            await tool_calls_collection.insert_one({
-                "tool_name": msg.name,
-                "arguments": dict(msg.arguments or {}),
-                "method": context.method,
-                "session_id": context.fastmcp_context.session_id,
-                "request_id": context.fastmcp_context.request_id,
-                "duration_ms": elapsed_ms,
-                "timestamp": start,
-                "status": "error" if error else "ok",
-                "error": error,
-                "result": str(result) if result else None,
-            })
+            await tool_calls_collection.insert_one(
+                {
+                    "tool_name": msg.name,
+                    "arguments": dict(msg.arguments or {}),
+                    "method": context.method,
+                    "session_id": (
+                        context.fastmcp_context.session_id
+                        if context.fastmcp_context
+                        else None
+                    ),
+                    "request_id": (
+                        context.fastmcp_context.request_id
+                        if context.fastmcp_context
+                        else None
+                    ),
+                    "duration_ms": elapsed_ms,
+                    "timestamp": start,
+                    "status": "error" if error else "ok",
+                    "error": error,
+                    "result": str(result) if result else None,
+                }
+            )
 
         return result
